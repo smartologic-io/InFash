@@ -38,7 +38,7 @@ contract ProfileContract is Ownable {
   mapping(address => string) encryptedMessages;
   mapping(address => uint) requestAmount;
   
-  event Request(uint[] type, uint period, uint tokenAmount);
+  event Request(uint[] indexed type, uint indexed period, uint indexed tokenAmount);
   
   constructor(string _login, string _firstName, string _lastName, string _email, string _bodyshape) public {
     filters[types.Login] = _login;
@@ -72,6 +72,7 @@ contract ProfileContract is Ownable {
   	encryptedMessages[_user] = _encryptedMessage;
   }
   
+  // get encrypted link to data of user
   function getEncryptedData() external view returns(string) {
   	return encryptedMessages[msg.sender];
   }
