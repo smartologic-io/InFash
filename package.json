@@ -1,0 +1,28 @@
+{
+  "name": "waam",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smartologic-io/WAAM.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "web3": "^1.0.0-beta.34",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.0.0",
+    "chai-bignumber": "^2.0.2"
+  },
+  "bugs": {
+    "url": "https://github.com/smartologic-io/WAAM/issues"
+  },
+  "homepage": "https://github.com/smartologic-io/WAAM#readme"
+}
