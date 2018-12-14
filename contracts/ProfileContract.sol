@@ -1,5 +1,51 @@
 pragma solidity 0.4.25;
 
+/**
+ * @title SafeMath
+ * @dev Math operations with safety checks that throw on error
+ */
+library SafeMath {
+
+  /**
+  * @dev Multiplies two numbers, throws on overflow.
+  */
+  function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    if (a == 0) {
+      return 0;
+    }
+    c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  /**
+  * @dev Integer division of two numbers, truncating the quotient.
+  */
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    // uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return a / b;
+  }
+
+  /**
+  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  */
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  /**
+  * @dev Adds two numbers, throws on overflow.
+  */
+  function add(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
 contract Ownable {
   address public owner;
 
@@ -22,15 +68,17 @@ contract Ownable {
 }
 
 contract ProfileContract is Ownable {
+    
+  using SafeMath for uint256;
 
-  enum Type { Login, FirstName, LastName, Email, Bodyshape };
+  enum Type { Login, FirstName, LastName, Email, Bodyshape }
   
   Type types;
 
   struct Request {
-  	uint[] type,
-  	uint period,
-  	uint tokenAmount
+    uint[] id;
+    uint period;
+    uint tokenAmount;
   }
 
   mapping(uint => string) filters;
@@ -38,42 +86,39 @@ contract ProfileContract is Ownable {
   mapping(address => string) encryptedMessages;
   mapping(address => uint) requestAmount;
   
-  event Request(uint[] indexed type, uint indexed period, uint indexed tokenAmount);
+  event GetRequest(uint[] indexed id, uint indexed period, uint indexed tokenAmount);
   
-  constructor(string _login, string _firstName, string _lastName, string _email, string _bodyshape) public {
-    filters[types.Login] = _login;
-    filters[types.FirstName] = _firstName;
-    filters[types.LastName] = _lastName;
-    filters[types.Email] = _email;
-    filters[types.Bodyshape] = _bodyshape;
+  constructor() public {
   }
 
-  // any retailer can request personal user data
+  // any user can request personal user data
   function requestData(uint[] _type, uint _period, uint _tokenAmount) external {
-  	require(_type.length > 0 && _type.length <= 5);  	
-  	require(_period > 0);
-  	require(_tokenAmount > 0);
+    require(_type.length > 0 && _type.length <= 5);   
+    require(_period > 0);
+    require(_tokenAmount > 0);
 
-  	for(uint i = 0; i < _type.length; i++) {
-  		require(_type[i] >=0 && _type[i] < 5);
-  	}
+    for(uint i = 0; i < _type.length; i++) {
+      require(_type[i] >=0 && _type[i] < 5);
+    }
 
-  	requestAmount[msg.sender] = requestAmount[msg.sender].add(1);
-  	requests[msg.sender][requestAmount[msg.sender]] = Request(_type, _period, _tokenAmount);
+    requestAmount[msg.sender] = requestAmount[msg.sender].add(1);
+    requests[msg.sender][requestAmount[msg.sender]] = Request(_type, _period, _tokenAmount);
   }
 
   function getRequestsFrom(address _addr) public onlyOwner {
-  	for(uint i = 1; i <= requestAmount[_addr]; i++)	{
-  		emit GetRequest(requests[_addr][i].type, requests[_addr][i].period, requests[_addr][i].tokenAmount);
-  	}
+    require(requestAmount[_addr] > 0);
+    
+    for(uint i = 1; i <= requestAmount[_addr]; i++) {
+      emit GetRequest(requests[_addr][i].id, requests[_addr][i].period, requests[_addr][i].tokenAmount);
+    }
   }
 
   function agree(address _user, string _encryptedMessage) external onlyOwner {
-  	encryptedMessages[_user] = _encryptedMessage;
+    encryptedMessages[_user] = _encryptedMessage;
   }
   
   // get encrypted link to data of user
   function getEncryptedData() external view returns(string) {
-  	return encryptedMessages[msg.sender];
+    return encryptedMessages[msg.sender];
   }
 }
