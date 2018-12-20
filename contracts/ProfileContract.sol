@@ -86,7 +86,7 @@ contract ProfileContract is Ownable {
   mapping(address => string) encryptedMessages;
   mapping(address => uint) requestAmount;
   
-  event GetRequest(uint[] indexed id, uint indexed period, uint indexed tokenAmount);
+  event GetRequest(uint[] id, uint period, uint tokenAmount);
   
   constructor() public {
   }

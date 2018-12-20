@@ -62,6 +62,12 @@ contract('ProfileContract', function () {
        await this.profile.agree(web3.eth.accounts[1], "test", {from: web3.eth.accounts[0]});
     });
   });
-  
 
+  describe('Get encrypted data', async function() {
+    it('should pass', async function() {
+       await this.profile.requestData([1, 2, 3, 4], 24, 100, { from: web3.eth.accounts[1] });
+       await this.profile.agree(web3.eth.accounts[1], "test", { from: web3.eth.accounts[0] });
+       await this.profile.getEncryptedData({ from: web3.eth.accounts[1] });
+    });
+  });
 });
