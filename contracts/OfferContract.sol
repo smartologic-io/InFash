@@ -18,7 +18,7 @@ contract OfferContract {
     uint public creationDate;
     uint public bookingTime = 30 minutes;
 
-    event AgreementCreated(address tenant, address landlord, uint price);
+    event AgreementCreated(address retailer, address customer, uint price);
     event OfferPriceChangeRequested(address by, uint newPrice);
     event PriceChangeRequestAccepted(address from, uint newPrice);
 
@@ -50,7 +50,7 @@ contract OfferContract {
         }
         
         //AgreementContract agreement = new AgreementContract(msg.sender, owner, price);
-        emit AgreementCreated(msg.sender, owner);
+        emit AgreementCreated(owner, msg.sender, price);
         status = OfferStatus.Accepted;
     }
 
