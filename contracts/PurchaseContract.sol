@@ -91,6 +91,7 @@ contract PurchaseContract {
     address buyer;
     address retailer;
     address model;
+    bool purchased;
   }
 
   Product[] products;
@@ -105,7 +106,16 @@ contract PurchaseContract {
     require(_productId > 0);
     require(_price > 0);
 
-    products.push(Product(_productId, _price, address(0), msg.sender, address(0)));
+    products.push(Product(_productId, _price, address(0), msg.sender, address(0), false));
+  }
+  
+  function purchaseRequest(uint _productId) external {
+    (Product memory _product, uint index) = findProductById(_productId);
+    require(_productId != 1 && _product.id == _productId && _product.purchased == false);
+    require(_product.buyer == address(0));
+    require(_product.price <= token.balanceOf(msg.sender));
+    _product.buyer = msg.sender;
+     products[index] = _product;
   }
 
   function getUnPurchasedProducts() external view returns(uint[]) {
@@ -136,28 +146,33 @@ contract PurchaseContract {
     return results;
   }
 
-  function confirmPurchase(uint _productId, address _buyer, address _model) external {
+  function confirmPurchase(uint _productId, address _model) external {
     require(_productId != 0);
 
-    Product memory _product = findProductById(_productId);
+    (Product memory _product, uint index) = findProductById(_productId);
 
-    require(msg.sender == _product.retailer && _buyer != address(0)); 
+    require(msg.sender == _product.retailer && _product.buyer != address(0)); 
 
-    _product.buyer = _buyer;
     _product.model = _model;
 
-    token.transferFrom(_buyer, _product.retailer, _product.price.mul(90).div(100));
-    token.transferFrom(_buyer, _product.model, _product.price.mul(6).div(100));
+    token.transferFrom(_product.buyer, _product.retailer, _product.price.mul(90).div(100));
+    token.transferFrom(_product.buyer, _product.model, _product.price.mul(6).div(100));
+    
+    _product.purchased = true;
+    
+    products[index] = _product;
 
-    emit Purchase(_productId, _product.price, _buyer, _product.retailer, _model);
+    emit Purchase(_productId, _product.price, _product.buyer, _product.retailer, _model);
   }
 
-  function findProductById(uint _productId) internal view returns(Product) {
+  function findProductById(uint _productId) internal view returns(Product, uint) {
     for(uint i = 0; i < products.length; i++) {
        if(products[i].id == _productId){
-         return products[i];
+         return (products[i], i);
        }
     }
+    return (Product(1, 1, address(0), address(0), address(0), false), 0);
+    
   }
   
   
