@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity 0.5.2;
 
 /**
  * @title SafeMath
@@ -108,17 +108,28 @@ contract PurchaseContract {
 
     products.push(Product(_productId, _price, address(0), msg.sender, address(0), false));
   }
+
+  function addProducts(uint[] calldata _productIds, uint[] calldata _prices) external {
+    require(_productIds.length > 0);
+    require(_prices.length > 0);
+    require(_productIds.length == _prices.length);
+
+    for(uint i = 0; i < _productIds.length; i++) {
+      require(_productIds[i] > 0 && _prices[i] > 0); 
+      products.push(Product(_productIds[i], _prices[i], address(0), msg.sender, address(0), false));
+    }
+  }
   
   function purchaseRequest(uint _productId) external {
     (Product memory _product, uint index) = findProductById(_productId);
-    require(_productId != 1 && _product.id == _productId && _product.purchased == false);
+    require(_productId != 0 && _product.id == _productId && _product.purchased == false);
     require(_product.buyer == address(0));
     require(_product.price <= token.balanceOf(msg.sender));
     _product.buyer = msg.sender;
      products[index] = _product;
   }
 
-  function getUnPurchasedProducts() external view returns(uint[]) {
+  function getUnPurchasedProducts() external view returns(uint[] memory) {
     uint index;
     uint[] memory results = new uint[](products.length);
 
@@ -132,7 +143,7 @@ contract PurchaseContract {
     return results;
   }
 
-  function getPurchasedProducts() external view returns(uint[]) {
+  function getPurchasedProducts() external view returns(uint[] memory) {
     uint index;
     uint[] memory results = new uint[](products.length);
 
@@ -165,13 +176,13 @@ contract PurchaseContract {
     emit Purchase(_productId, _product.price, _product.buyer, _product.retailer, _model);
   }
 
-  function findProductById(uint _productId) internal view returns(Product, uint) {
+  function findProductById(uint _productId) internal view returns(Product memory, uint) {
     for(uint i = 0; i < products.length; i++) {
        if(products[i].id == _productId){
          return (products[i], i);
        }
     }
-    return (Product(1, 1, address(0), address(0), address(0), false), 0);
+    return (Product(0, 1, address(0), address(0), address(0), false), 0);
     
   }
   
