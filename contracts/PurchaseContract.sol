@@ -199,13 +199,12 @@ contract PurchaseContract {
 
     (Product memory _product, uint index) = findProductAndIndexById(_productId);
 
-    require(msg.sender == _product.retailer && _product.buyer != address(0) && token.balanceOf(address(this)) >= _product.price); 
+    require(msg.sender == _product.retailer && _product.buyer != address(0) && token.allowance(_product.buyer, address(this)) >= _product.price); 
 
     _product.model = _model;
 
-    token.transfer(_product.retailer, _product.price.mul(90).div(100));
-    token.transfer(_product.model, _product.price.mul(6).div(100));
-    token.transfer(_product.buyer, _product.price.mul(4).div(100));
+    token.transferFrom(_product.buyer, _product.retailer, _product.price.mul(90).div(100));
+    token.transferFrom(_product.buyer, _product.model, _product.price.mul(6).div(100));
     
     _product.purchased = true;
     purchasedProductsCount = purchasedProductsCount.add(1);
