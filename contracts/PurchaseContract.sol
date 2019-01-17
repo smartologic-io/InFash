@@ -92,7 +92,6 @@ contract PurchaseContract {
     uint price;
     uint unconfirmedRequests;
     address[] buyers;
-    mapping (address => uint) purchaseAmount;
     mapping (address => bool) isConfirmed;
     address retailer;
     address model;
@@ -132,19 +131,38 @@ contract PurchaseContract {
     }
   }
   
-  function purchaseRequest(uint _productId, uint _amount) external {
+  function purchaseRequest(uint _productId) external {
     (Product memory _product, uint index) = findProductAndIndexById(_productId);
     require(_productId != 0 && _product.id == _productId);
     require(_product.price <= token.balanceOf(msg.sender));
-    require(_amount > 0);
     
     products[index] = _product;
-    products[index].buyers.push(msg.sender);
-    products[index].purchaseAmount[msg.sender] = _amount;
+    
     if(products[index].unconfirmedRequests == 0){
        requestedProducts = requestedProducts.add(1);
     }
-    products[index].unconfirmedRequests = products[index].unconfirmedRequests.add(1);
+    
+    if(!isBuyerExist(index, msg.sender)) {
+        products[index].unconfirmedRequests = products[index].unconfirmedRequests.add(1);
+        products[index].buyers.push(msg.sender);
+    } else if(products[index].isConfirmed[msg.sender]){
+        products[index].unconfirmedRequests = products[index].unconfirmedRequests.add(1);
+    }
+    
+    
+    products[index].isConfirmed[msg.sender] = false;
+  }
+  
+  function isBuyerExist(uint _index, address _buyer) internal view returns(bool) {
+    
+    for(uint y = 0; y < products[_index].buyers.length; y++) {
+      if(products[_index].buyers[y] == _buyer) {
+        return true;
+      }
+    }
+    
+    return false;
+    
   }
 
   function getProductPrice(uint _productId) external view returns(uint) {
@@ -178,7 +196,7 @@ contract PurchaseContract {
     uint index;
     uint[] memory results = new uint[](requestedProducts);
     for(uint i = 0; i < products.length; i++) {
-        if(products[i].unconfirmedRequests > 0 && products[i].purchaseAmount[_buyer] > 0 && products[i].isConfirmed[_buyer] == false) {
+        if(products[i].unconfirmedRequests > 0 && isBuyerExist(i, _buyer) && products[i].isConfirmed[_buyer] == false) {
             results[index] = products[i].id;
             index = index.add(1);
         }
@@ -212,8 +230,7 @@ contract PurchaseContract {
 
     (Product memory _product, uint index) = findProductAndIndexById(_productId);
     
-    require(msg.sender == _product.retailer && _product.buyers.length != 0 && token.allowance(_buyer, address(this)) >= _product.price); 
-    require(products[index].purchaseAmount[_buyer] > 0);
+    require(msg.sender == _product.retailer && _product.buyers.length != 0 && isBuyerExist(index, _buyer) && !products[index].isConfirmed[_buyer] && token.allowance(_buyer, address(this)) >= _product.price); 
     
     _product.model = _model;
 
@@ -223,6 +240,7 @@ contract PurchaseContract {
     products[index] = _product;
     
     products[index].isConfirmed[_buyer] = true;
+    
     products[index].unconfirmedRequests = products[index].unconfirmedRequests.sub(1);
     if(products[index].unconfirmedRequests == 0){
        requestedProducts = requestedProducts.sub(1);
