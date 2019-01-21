@@ -79,6 +79,24 @@ interface IERC20 {
   );
 }
 
+interface Storage {
+
+  function addProduct(uint _productId, uint _price) external;
+
+  function getProductPrice(uint _productId) external view returns(uint);
+
+  function getProductRetailer(uint _productId) external view returns(address);
+
+  function getProductBuyers(uint _productId) external view returns(address[] memory);
+
+  function getRequestedProducts() external view returns(uint[] memory);
+
+  function getRequestedProductsBy(address _buyer) external view returns(uint[] memory);
+
+  function getProductBuyersWithUnconfirmedRequests(uint _productId) external view returns(address[] memory);  
+  
+}
+
 contract PurchaseContract {
     
   using SafeMath for uint256;
