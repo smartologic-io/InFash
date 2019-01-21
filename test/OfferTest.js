@@ -25,26 +25,28 @@ const OfferContract = artifacts.require('OfferContract');
 contract('OfferContract', function () {
 
     beforeEach(async function () {
-      this.contract = await OfferContract.new(web3.toWei('1', 'ether'), 100);
+      this.contract = await OfferContract.new(web3.toWei('1', 'ether'), 10);
     });
 
     describe('acceptOffer', function () {
       it('Should fail due to not in active duration', async function () {
-        await increaseTimeTo(duration.days(10));
+        await increaseTimeTo(duration.days(11));
         await this.contract.acceptOffer({from: web3.eth.accounts[5]}).should.be.rejectedWith('revert');
       });
 
       it('Should pass', async function () {
         let tx = await this.contract.acceptOffer({from: web3.eth.accounts[5]});
         let events = tx.logs.filter(l => l.event === 'AgreementCreated');
+        let customerAccount = events[0].args.customer;
         let retailerAccount = events[0].args.retailer;
-        assert.equal(web3.eth.accounts[5], retailerAccount);
+        assert.equal(web3.eth.accounts[5], customerAccount);
+        assert.equal(web3.eth.accounts[0], retailerAccount);
       });
     });
 
     describe('priceChangeRequest', function () {
       it('Should fail due to not in active duration', async function () {
-        await increaseTimeTo(duration.days(10));
+        await increaseTimeTo(duration.days(11));
         await this.contract.priceChangeRequest(2, {from: web3.eth.accounts[3]}).should.be.rejectedWith('revert');
       });
 
