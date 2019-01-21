@@ -84,6 +84,8 @@ contract PurchaseContract {
   using SafeMath for uint256;
   
   uint requestedProducts;
+  
+  address applicationAddress = 0x8eDE6C5CDfFd4C6a8e6Da2157A37CE45A0602dB0;
 
   IERC20 token;
 
@@ -194,7 +196,16 @@ contract PurchaseContract {
   
   function getRequestedProductsBy(address _buyer) public view returns(uint[] memory) {
     uint index;
-    uint[] memory results = new uint[](requestedProducts);
+    
+    for(uint i = 0; i < products.length; i++) {
+        if(products[i].unconfirmedRequests > 0 && isBuyerExist(i, _buyer) && products[i].isConfirmed[_buyer] == false) {
+            index = index.add(1);
+        }
+    }
+    
+    uint[] memory results = new uint[](index);
+    index = 0;
+    
     for(uint i = 0; i < products.length; i++) {
         if(products[i].unconfirmedRequests > 0 && isBuyerExist(i, _buyer) && products[i].isConfirmed[_buyer] == false) {
             results[index] = products[i].id;
@@ -235,7 +246,8 @@ contract PurchaseContract {
     _product.model = _model;
 
     token.transferFrom(_buyer, _product.retailer, _product.price.mul(90).div(100));
-    token.transferFrom(_buyer, _product.model, _product.price.mul(6).div(100));
+    token.transferFrom(_buyer, _product.model, _product.price.mul(4).div(100));
+    token.transferFrom(_buyer, applicationAddress, _product.price.mul(5).div(100));
     
     products[index] = _product;
     
