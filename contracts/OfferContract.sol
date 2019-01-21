@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity 0.5.2;
 
 /**
  * @title SafeMath
@@ -78,7 +78,7 @@ contract OfferContract {
         _; 
     }
     
-    constructor (uint _price, uint _activeDuration){
+    constructor (uint _price, uint _activeDuration) public {
         require(_activeDuration > 0);
 
         owner = msg.sender;

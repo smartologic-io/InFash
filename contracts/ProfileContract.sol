@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity 0.5.2;
 
 /**
  * @title SafeMath
@@ -92,7 +92,7 @@ contract ProfileContract is Ownable {
   }
 
   // any user can request personal user data
-  function requestData(uint[] _type, uint _period, uint _tokenAmount) external {
+  function requestData(uint[] calldata _type, uint  _period, uint _tokenAmount) external {
     require(_type.length > 0 && _type.length <= 5);   
     require(_period > 0);
     require(_tokenAmount > 0);
@@ -113,12 +113,12 @@ contract ProfileContract is Ownable {
     }
   }
 
-  function agree(address _user, string _encryptedMessage) external onlyOwner {
+  function agree(address _user, string calldata _encryptedMessage) external onlyOwner {
     encryptedMessages[_user] = _encryptedMessage;
   }
   
   // get encrypted link to data of user
-  function getEncryptedData() external view returns(string) {
+  function getEncryptedData() external view returns(string memory) {
     return encryptedMessages[msg.sender];
   }
 }
