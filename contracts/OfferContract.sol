@@ -53,20 +53,20 @@ contract OfferContract {
     enum OfferStatus { New, Accepted, Booked }
     OfferStatus status;
 
-    mapping (address => uint) newProposedPrices;
+    mapping (address => string) newProposedConditions;
     mapping (address => uint) bookedAt;
 
     address public owner;
     address public bookedFor;
 
-    uint public price;
+    string public conditions;
     uint public activeDuration;
     uint public creationDate;
     uint public bookingTime = 30 minutes;
 
-    event AgreementCreated(address retailer, address customer, uint price);
-    event OfferPriceChangeRequested(address by, uint newPrice);
-    event PriceChangeRequestAccepted(address from, uint newPrice);
+    event AgreementCreated(address retailer, address customer, string conditions);
+    event OfferConditionsChangeRequested(address by, string newConditions);
+    event ConditionsChangeRequestAccepted(address from, string newConditions);
 
     modifier onlyOwner() { 
         require(msg.sender == owner); 
@@ -78,11 +78,11 @@ contract OfferContract {
         _; 
     }
     
-    constructor (uint _price, uint _activeDuration) public {
+    constructor (string memory _conditions, uint _activeDuration) public {
         require(_activeDuration > 0);
 
         owner = msg.sender;
-        price = _price;
+        conditions = _conditions;
         creationDate = block.timestamp;
         activeDuration = _activeDuration.mul(1 days);
     }
@@ -95,20 +95,20 @@ contract OfferContract {
             require(msg.sender == bookedFor);
         }
         
-        //AgreementContract agreement = new AgreementContract(msg.sender, owner, price);
-        emit AgreementCreated(owner, msg.sender, price);
+        //AgreementContract agreement = new AgreementContract(msg.sender, owner, conditions);
+        emit AgreementCreated(owner, msg.sender, conditions);
         status = OfferStatus.Accepted;
     }
 
-    function priceChangeRequest(uint _newPrice) public onlyInActiveDuration {
-        newProposedPrices[msg.sender] = _newPrice;
-        emit OfferPriceChangeRequested(msg.sender, _newPrice);
+    function conditionsChangeRequest(string memory _conditions) public onlyInActiveDuration {
+        newProposedConditions[msg.sender] = _conditions;
+        emit OfferConditionsChangeRequested(msg.sender, _conditions);
     }
 
-    function acceptPriceChangeRequestFrom(address _tenant) public onlyOwner onlyInActiveDuration {
-        require(newProposedPrices[_tenant] > 0);
-        price = newProposedPrices[_tenant];
-        emit PriceChangeRequestAccepted(_tenant, price);
+    function acceptConditionsChangeRequestFrom(address _tenant) public onlyOwner onlyInActiveDuration {
+        require(bytes(newProposedConditions[_tenant]).length > 0);
+        conditions = newProposedConditions[_tenant];
+        emit ConditionsChangeRequestAccepted(_tenant, conditions);
 
         status = OfferStatus.Booked;
         bookedAt[_tenant] = block.timestamp;
