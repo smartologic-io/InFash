@@ -83,6 +83,8 @@ interface Storage {
 
   function addProduct(uint _productId, uint _price) external;
 
+  function addProducts(uint[] calldata _productIds, uint[] calldata _prices) external;
+
   function getProductPrice(uint _productId) external view returns(uint);
 
   function getProductRetailer(uint _productId) external view returns(address);
@@ -94,6 +96,16 @@ interface Storage {
   function getRequestedProductsBy(address _buyer) external view returns(uint[] memory);
 
   function getProductBuyersWithUnconfirmedRequests(uint _productId) external view returns(address[] memory);  
+
+  function updateProduct(uint _productId, uint _unconfirmedRequests, address newBuyer) external;
+
+  function isBuyerExist(uint _index, address _buyer) external view returns(bool);
+
+  function getProductDetails(uint _productId, address _buyer) external view returns(uint, uint, uint, bool);
+
+  function findProductAndIndexById(uint _productId) external view returns(uint, uint);
+
+  function findProductIndexById(uint _productId) external view returns(uint);
   
 }
 
@@ -107,157 +119,68 @@ contract PurchaseContract {
 
   IERC20 token;
 
-  struct Product {
-    uint id;
-    uint price;
-    uint unconfirmedRequests;
-    address[] buyers;
-    mapping (address => bool) isConfirmed;
-    address retailer;
-    address model;
-  }
-
-  Product[] products;
+  Storage _storage;
   
   event Purchase(uint _id, uint _price, address _buyer, address _retailer, address _model);
   
-  constructor(address _tokenAddress) public {
+  constructor(address _tokenAddress, address __storage) public {
     token = IERC20(_tokenAddress);
+    _storage = Storage(__storage);
   }
 
-  function addProduct(uint _productId, uint _price) public {
-    require(_productId > 0);
-    require(_price > 0);
-    
-    Product memory _product = findProductById(_productId);
-    require(_product.id == 0);
-    
-    _product.id = _productId;
-    _product.price = _price;
-    _product.retailer = msg.sender;
-    _product.model = address(0);
-    
-    products.push(_product);
-    
+  function addProduct(uint _productId, uint _price) external {
+    _storage.addProduct(_productId, _price);
   }
 
   function addProducts(uint[] calldata _productIds, uint[] calldata _prices) external {
-    require(_productIds.length > 0);
-    require(_prices.length > 0);
-    require(_productIds.length == _prices.length);
-
-    for(uint i = 0; i < _productIds.length; i++) {
-      addProduct(_productIds[i], _prices[i]);
-    }
+    _storage.addProducts(_productIds, _prices);
   }
   
   function purchaseRequest(uint _productId) external {
-    (Product memory _product, uint index) = findProductAndIndexById(_productId);
-    require(_productId != 0 && _product.id == _productId);
-    require(_product.price <= token.balanceOf(msg.sender));
+    (uint unconfirmedRequests, uint price, uint index, bool isConfirmed) = _storage.getProductDetails(_productId, msg.sender);
+    require(_productId != 0);
+    require(price <= token.balanceOf(msg.sender));
     
-    products[index] = _product;
-    
-    if(products[index].unconfirmedRequests == 0){
+    if(unconfirmedRequests == 0) {
        requestedProducts = requestedProducts.add(1);
     }
     
-    if(!isBuyerExist(index, msg.sender)) {
-        products[index].unconfirmedRequests = products[index].unconfirmedRequests.add(1);
-        products[index].buyers.push(msg.sender);
-    } else if(products[index].isConfirmed[msg.sender]){
-        products[index].unconfirmedRequests = products[index].unconfirmedRequests.add(1);
+    if(!_storage.isBuyerExist(index, msg.sender)) {
+        _storage.updateProduct(_productId, unconfirmedRequests.add(1), msg.sender);
+    } else if(isConfirmed) {
+        _storage.updateProduct(_productId, unconfirmedRequests.add(1), address(0));
     }
-    
-    
-    products[index].isConfirmed[msg.sender] = false;
-  }
-  
-  function isBuyerExist(uint _index, address _buyer) internal view returns(bool) {
-    
-    for(uint y = 0; y < products[_index].buyers.length; y++) {
-      if(products[_index].buyers[y] == _buyer) {
-        return true;
-      }
-    }
-    
-    return false;
     
   }
 
   function getProductPrice(uint _productId) external view returns(uint) {
-    Product memory _product = findProductById(_productId);
-    return _product.price;
+    return _storage.getProductPrice(_productId);
   }
 
   function getProductRetailer(uint _productId) external view returns(address) {
-    Product memory _product = findProductById(_productId);
-    return _product.retailer;
+    return _storage.getProductRetailer(_productId);
   }
   
   function getProductBuyers(uint _productId) public view returns(address[] memory) {
-    Product memory _product = findProductById(_productId);
-    return _product.buyers;
+    return _storage.getProductBuyers(_productId);
   }
   
   function getRequestedProducts() public view returns(uint[] memory) {
-    uint index;
-    uint[] memory results = new uint[](requestedProducts);
-    for(uint i = 0; i < products.length; i++) {
-        if(products[i].unconfirmedRequests > 0) {
-            results[index] = products[i].id;
-            index = index.add(1);
-        }
-    }
-    return results;
+    return _storage.getRequestedProducts();
   }
   
   function getRequestedProductsBy(address _buyer) public view returns(uint[] memory) {
-    uint index;
-    
-    for(uint i = 0; i < products.length; i++) {
-        if(products[i].unconfirmedRequests > 0 && isBuyerExist(i, _buyer) && products[i].isConfirmed[_buyer] == false) {
-            index = index.add(1);
-        }
-    }
-    
-    uint[] memory results = new uint[](index);
-    index = 0;
-    
-    for(uint i = 0; i < products.length; i++) {
-        if(products[i].unconfirmedRequests > 0 && isBuyerExist(i, _buyer) && products[i].isConfirmed[_buyer] == false) {
-            results[index] = products[i].id;
-            index = index.add(1);
-        }
-    }
-    return results;
+    return _storage.getRequestedProductsBy(_buyer);
   }
   
   function getProductBuyersWithUnconfirmedRequests(uint _productId) external view returns(address[] memory) {
-    uint index;
-    (Product memory _product, uint i) = findProductAndIndexById(_productId);
-    address[] memory buyers = getProductBuyers(_productId);
-    address[] memory results = new address[](_product.unconfirmedRequests);
-    
-    for(uint y = 0; y < buyers.length; y++) {
-      if(!products[i].isConfirmed[buyers[y]]) {
-        results[index] = buyers[y];
-        index = index.add(1);
-      }
-    }
-    
-    return results;
+    return _storage.getProductBuyersWithUnconfirmedRequests(_productId);
   }
   
-  function isClientPayed(uint _productId, address _client) external view returns(bool) {
-    uint index = findProductIndexById(_productId);
-    return products[index].isConfirmed[_client];
-  }
-
-  function confirmPurchase(uint _productId, address _buyer, address _model) external {
+  /*function confirmPurchase(uint _productId, address _buyer, address _model) external {
     require(_productId != 0);
 
-    (Product memory _product, uint index) = findProductAndIndexById(_productId);
+    (Product memory _product, uint index) = _storage.findProductAndIndexById(_productId);
     
     require(msg.sender == _product.retailer && _product.buyers.length != 0 && isBuyerExist(index, _buyer) && !products[index].isConfirmed[_buyer] && token.allowance(_buyer, address(this)) >= _product.price); 
     
@@ -277,41 +200,6 @@ contract PurchaseContract {
     }
     
     emit Purchase(_productId, _product.price, _buyer, _product.retailer, _model);
-  }
-
-  function findProductAndIndexById(uint _productId) internal view returns(Product memory, uint) {
-    for(uint i = 0; i < products.length; i++) {
-       if(products[i].id == _productId){
-         return (products[i], i);
-       }
-    }
-    
-    Product memory product;
-    
-    return (product, 0);
-  }
-  
-  function findProductIndexById(uint _productId) internal view returns(uint) {
-    for(uint i = 0; i < products.length; i++) {
-       if(products[i].id == _productId){
-         return i;
-       }
-    }
-    
-    return 0;
-  }
-  
-  function findProductById(uint _productId) internal view returns(Product memory) {
-    for(uint i = 0; i < products.length; i++) {
-       if(products[i].id == _productId){
-         return products[i];
-       }
-    }
-    
-    Product memory product;
-    
-    return product;
-  }
-  
+  }*/
   
 }

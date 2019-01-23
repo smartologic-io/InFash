@@ -80,6 +80,16 @@ contract StorageContract {
     
     }
 
+    function addProducts(uint[] calldata _productIds, uint[] calldata _prices) external {
+      require(_productIds.length > 0);
+      require(_prices.length > 0);
+      require(_productIds.length == _prices.length);
+
+      for(uint i = 0; i < _productIds.length; i++) {
+        addProduct(_productIds[i], _prices[i]);
+      }
+    }
+
     function isProductExist(uint _productId, address _retailer) external returns(bool res) {
       for(uint i = 0; i < products.length; i++) {
          if(products[i].id == _productId && products[i].retailer == _retailer) {
@@ -89,9 +99,17 @@ contract StorageContract {
 
       return false;
     }
-    
 
-    function isBuyerExist(uint _index, address _buyer) internal view returns(bool) {
+    function updateProduct(uint _productId, uint _unconfirmedRequests, address newBuyer) external {
+      uint index = findProductIndexById(_productId);
+      products[index].unconfirmedRequests = _unconfirmedRequests;
+      if(newBuyer != address(0)) {
+        products[index].buyers.push(newBuyer);
+      }
+      products[index].isConfirmed[newBuyer] = false;
+    }
+
+    function isBuyerExist(uint _index, address _buyer) public view returns(bool) {
     
       for(uint y = 0; y < products[_index].buyers.length; y++) {
         if(products[_index].buyers[y] == _buyer) {
@@ -178,8 +196,18 @@ contract StorageContract {
       
       return (product, 0);
     }
+
+    function getProductDetails(uint _productId, address _buyer) public view returns(uint, uint, uint, bool) {
+      for(uint i = 0; i < products.length; i++) {
+         if(products[i].id == _productId) {
+           return (products[i].unconfirmedRequests, products[i].price, i, products[i].isConfirmed[_buyer]);
+         }
+      }
+      
+      return (0, 0, 0, false);
+    }
   
-    function findProductIndexById(uint _productId) internal view returns(uint) {
+    function findProductIndexById(uint _productId) public view returns(uint) {
       for(uint i = 0; i < products.length; i++) {
          if(products[i].id == _productId){
            return i;
