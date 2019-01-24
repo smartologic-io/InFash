@@ -1,67 +1,48 @@
 pragma solidity 0.5.2;
 
-
 /**
  * @title SafeMath
- * @dev Math operations with safety checks that revert on error
+ * @dev Math operations with safety checks that throw on error
  */
 library SafeMath {
 
   /**
-  * @dev Multiplies two numbers, reverts on overflow.
+  * @dev Multiplies two numbers, throws on overflow.
   */
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
-    // benefit is lost if 'b' is also tested.
-    // See: https://github.com/OpenZeppelin/openzeppelin-solidity/pull/522
+  function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {
     if (a == 0) {
       return 0;
     }
-
-    uint256 c = a * b;
-    require(c / a == b);
-
+    c = a * b;
+    assert(c / a == b);
     return c;
   }
 
   /**
-  * @dev Integer division of two numbers truncating the quotient, reverts on division by zero.
+  * @dev Integer division of two numbers, truncating the quotient.
   */
   function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    require(b > 0); // Solidity only automatically asserts when dividing by 0
-    uint256 c = a / b;
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    // uint256 c = a / b;
     // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-
-    return c;
+    return a / b;
   }
 
   /**
-  * @dev Subtracts two numbers, reverts on overflow (i.e. if subtrahend is greater than minuend).
+  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
   */
   function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    require(b <= a);
-    uint256 c = a - b;
-
-    return c;
+    assert(b <= a);
+    return a - b;
   }
 
   /**
-  * @dev Adds two numbers, reverts on overflow.
+  * @dev Adds two numbers, throws on overflow.
   */
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    require(c >= a);
-
+  function add(uint256 a, uint256 b) internal pure returns (uint256 c) {
+    c = a + b;
+    assert(c >= a);
     return c;
-  }
-
-  /**
-  * @dev Divides two numbers and returns the remainder (unsigned integer modulo),
-  * reverts when dividing by zero.
-  */
-  function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-    require(b != 0);
-    return a % b;
   }
 }
 
@@ -77,6 +58,7 @@ contract AgreementContract {
 
     address public model;
     address public owner;
+    address public offerAddress;
 
     uint public agreementCreated;
     uint month = 30 days;
@@ -115,6 +97,7 @@ contract AgreementContract {
     constructor(address _model, address _owner, string memory _conditions) public {
         model = _model;
         owner = _owner;
+        offerAddress = msg.sender;
         conditions = _conditions;
         agreementCreated = block.timestamp;
         status = AgreementStatus.New;
