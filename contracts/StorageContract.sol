@@ -59,7 +59,6 @@ contract StorageContract {
       address[] buyers;
       mapping (address => bool) isConfirmed;
       address retailer;
-      address model;
     }
 
     Product[] products;
@@ -74,8 +73,7 @@ contract StorageContract {
       _product.id = _productId;
       _product.price = _price;
       _product.retailer = msg.sender;
-      _product.model = address(0);
-      
+
       products.push(_product);
     
     }
@@ -100,13 +98,13 @@ contract StorageContract {
       return false;
     }
 
-    function updateProduct(uint _productId, uint _unconfirmedRequests, address newBuyer) external {
+    function updateProduct(uint _productId, uint _unconfirmedRequests, address buyer, bool isConfirmed) external {
       uint index = findProductIndexById(_productId);
       products[index].unconfirmedRequests = _unconfirmedRequests;
-      if(newBuyer != address(0)) {
-        products[index].buyers.push(newBuyer);
+      if(buyer != address(0) && !isBuyerExist(index, buyer)) {
+        products[index].buyers.push(buyer);
       }
-      products[index].isConfirmed[newBuyer] = false;
+      products[index].isConfirmed[buyer] = isConfirmed;
     }
 
     function isBuyerExist(uint _index, address _buyer) public view returns(bool) {
@@ -197,14 +195,14 @@ contract StorageContract {
       return (product, 0);
     }
 
-    function getProductDetails(uint _productId, address _buyer) public view returns(uint, uint, uint, bool) {
+    function getProductDetails(uint _productId, address _buyer) public view returns(uint, uint, uint, address[] memory, bool, address) {
       for(uint i = 0; i < products.length; i++) {
          if(products[i].id == _productId) {
-           return (products[i].unconfirmedRequests, products[i].price, i, products[i].isConfirmed[_buyer]);
+           return (products[i].unconfirmedRequests, products[i].price, i, products[i].buyers, products[i].isConfirmed[_buyer], products[i].retailer);
          }
       }
       
-      return (0, 0, 0, false);
+      return (0, 0, 0, new address[](0), false, address(0));
     }
   
     function findProductIndexById(uint _productId) public view returns(uint) {

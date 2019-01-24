@@ -97,11 +97,11 @@ interface Storage {
 
   function getProductBuyersWithUnconfirmedRequests(uint _productId) external view returns(address[] memory);  
 
-  function updateProduct(uint _productId, uint _unconfirmedRequests, address newBuyer) external;
+  function updateProduct(uint _productId, uint _unconfirmedRequests, address buyer, bool isConfirmed) external;
 
   function isBuyerExist(uint _index, address _buyer) external view returns(bool);
 
-  function getProductDetails(uint _productId, address _buyer) external view returns(uint, uint, uint, bool);
+  function getProductDetails(uint _productId, address _buyer) external view returns(uint, uint, uint, address[] memory, bool, address);
 
   function findProductAndIndexById(uint _productId) external view returns(uint, uint);
 
@@ -137,7 +137,8 @@ contract PurchaseContract {
   }
   
   function purchaseRequest(uint _productId) external {
-    (uint unconfirmedRequests, uint price, uint index, bool isConfirmed) = _storage.getProductDetails(_productId, msg.sender);
+    (uint unconfirmedRequests, uint price, uint index, address[] memory buyers, bool isConfirmed, address retailer) = _storage.getProductDetails(_productId, msg.sender);
+
     require(_productId != 0);
     require(price <= token.balanceOf(msg.sender));
     
@@ -146,9 +147,9 @@ contract PurchaseContract {
     }
     
     if(!_storage.isBuyerExist(index, msg.sender)) {
-        _storage.updateProduct(_productId, unconfirmedRequests.add(1), msg.sender);
+        _storage.updateProduct(_productId, unconfirmedRequests.add(1), msg.sender, false);
     } else if(isConfirmed) {
-        _storage.updateProduct(_productId, unconfirmedRequests.add(1), address(0));
+        _storage.updateProduct(_productId, unconfirmedRequests.add(1), address(0), false);
     }
     
   }
@@ -177,29 +178,24 @@ contract PurchaseContract {
     return _storage.getProductBuyersWithUnconfirmedRequests(_productId);
   }
   
-  /*function confirmPurchase(uint _productId, address _buyer, address _model) external {
+  function confirmPurchase(uint _productId, address _buyer, address _model) external {
     require(_productId != 0);
 
-    (Product memory _product, uint index) = _storage.findProductAndIndexById(_productId);
+    (uint unconfirmedRequests, uint price, uint index, address[] memory buyers, bool isConfirmed, address retailer) = _storage.getProductDetails(_productId, _buyer);
     
-    require(msg.sender == _product.retailer && _product.buyers.length != 0 && isBuyerExist(index, _buyer) && !products[index].isConfirmed[_buyer] && token.allowance(_buyer, address(this)) >= _product.price); 
-    
-    _product.model = _model;
+    require(msg.sender == retailer && buyers.length != 0 && _storage.isBuyerExist(index, _buyer) && !isConfirmed && token.allowance(_buyer, address(this)) >= price);
 
-    token.transferFrom(_buyer, _product.retailer, _product.price.mul(90).div(100));
-    token.transferFrom(_buyer, _product.model, _product.price.mul(4).div(100));
-    token.transferFrom(_buyer, applicationAddress, _product.price.mul(5).div(100));
+    token.transferFrom(_buyer, retailer, price.mul(90).div(100));
+    token.transferFrom(_buyer, _model, price.mul(4).div(100));
+    token.transferFrom(_buyer, applicationAddress, price.mul(5).div(100));
     
-    products[index] = _product;
-    
-    products[index].isConfirmed[_buyer] = true;
-    
-    products[index].unconfirmedRequests = products[index].unconfirmedRequests.sub(1);
-    if(products[index].unconfirmedRequests == 0){
+    unconfirmedRequests = unconfirmedRequests.sub(1);
+    _storage.updateProduct(_productId, unconfirmedRequests, _buyer, true);
+    if(unconfirmedRequests == 0){
        requestedProducts = requestedProducts.sub(1);
     }
     
-    emit Purchase(_productId, _product.price, _buyer, _product.retailer, _model);
-  }*/
+    emit Purchase(_productId, price, _buyer, retailer, _model);
+  }
   
 }
