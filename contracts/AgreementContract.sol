@@ -130,7 +130,7 @@ contract AgreementContract {
         status = AgreementStatus.Declined;
         emit AgreementDeclined(msg.sender, _reason);
     }
-
+    
     function terminateAgreement() external onlyOwner onlySigned {
       require(status == AgreementStatus.Signed);
       

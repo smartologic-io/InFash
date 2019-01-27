@@ -20,7 +20,7 @@ contract OfferContract {
     uint public creationDate;
     uint public bookingTime = 30 minutes;
 
-    event AgreementCreated(address retailer, address customer, string conditions);
+    event AgreementCreated(address retailer, address customer, string conditions, address agreementAdress);
     event OfferConditionsChangeRequested(address by, string newConditions);
     event ConditionsChangeRequestAccepted(address from, string newConditions);
 
@@ -51,8 +51,8 @@ contract OfferContract {
             require(msg.sender == bookedFor);
         }
         
-        //AgreementContract agreement = new AgreementContract(msg.sender, owner, conditions);
-        emit AgreementCreated(owner, msg.sender, conditions);
+        AgreementContract agreement = new AgreementContract(msg.sender, owner, conditions);
+        emit AgreementCreated(owner, msg.sender, conditions, address(agreement));
         status = OfferStatus.Accepted;
     }
 
