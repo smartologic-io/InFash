@@ -97,7 +97,7 @@ interface Storage {
 
   function getProductBuyersWithUnconfirmedRequests(uint _productId) external view returns(address[] memory);  
 
-  function updateProduct(uint _productId, uint _unconfirmedRequests, address buyer, bool isConfirmed) external;
+  function updateProduct(uint _productId, uint _unconfirmedRequests, uint _requestedProducts, address buyer, bool isConfirmed) external;
 
   function isBuyerExist(uint _index, address _buyer) external view returns(bool);
 
@@ -147,9 +147,9 @@ contract PurchaseContract {
     }
     
     if(!_storage.isBuyerExist(index, msg.sender)) {
-        _storage.updateProduct(_productId, unconfirmedRequests.add(1), msg.sender, false);
+        _storage.updateProduct(_productId, unconfirmedRequests.add(1), requestedProducts, msg.sender, false);
     } else if(isConfirmed) {
-        _storage.updateProduct(_productId, unconfirmedRequests.add(1), address(0), false);
+        _storage.updateProduct(_productId, unconfirmedRequests.add(1), requestedProducts, address(0), false);
     }
     
   }
@@ -190,10 +190,12 @@ contract PurchaseContract {
     token.transferFrom(_buyer, applicationAddress, price.mul(5).div(100));
     
     unconfirmedRequests = unconfirmedRequests.sub(1);
-    _storage.updateProduct(_productId, unconfirmedRequests, _buyer, true);
+    
     if(unconfirmedRequests == 0){
        requestedProducts = requestedProducts.sub(1);
     }
+
+    _storage.updateProduct(_productId, unconfirmedRequests, requestedProducts, _buyer, true);
     
     emit Purchase(_productId, price, _buyer, retailer, _model);
   }

@@ -1,6 +1,77 @@
 pragma solidity 0.5.2;
 
 /**
+ * @title Ownable
+ * @dev The Ownable contract has an owner address, and provides basic authorization control
+ * functions, this simplifies the implementation of "user permissions".
+ */
+contract Ownable {
+    address private _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev The Ownable constructor sets the original `owner` of the contract to the sender
+     * account.
+     */
+    constructor () internal {
+        _owner = msg.sender;
+        emit OwnershipTransferred(address(0), _owner);
+    }
+
+    /**
+     * @return the address of the owner.
+     */
+    function owner() public view returns (address) {
+        return _owner;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        require(isOwner());
+        _;
+    }
+
+    /**
+     * @return true if `msg.sender` is the owner of the contract.
+     */
+    function isOwner() public view returns (bool) {
+        return msg.sender == _owner;
+    }
+
+    /**
+     * @dev Allows the current owner to relinquish control of the contract.
+     * @notice Renouncing to ownership will leave the contract without an owner.
+     * It will not be possible to call the functions with the `onlyOwner`
+     * modifier anymore.
+     */
+    function renounceOwnership() public onlyOwner {
+        emit OwnershipTransferred(_owner, address(0));
+        _owner = address(0);
+    }
+
+    /**
+     * @dev Allows the current owner to transfer control of the contract to a newOwner.
+     * @param newOwner The address to transfer ownership to.
+     */
+    function transferOwnership(address newOwner) public onlyOwner {
+        _transferOwnership(newOwner);
+    }
+
+    /**
+     * @dev Transfers control of the contract to a newOwner.
+     * @param newOwner The address to transfer ownership to.
+     */
+    function _transferOwnership(address newOwner) internal {
+        require(newOwner != address(0));
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
+}
+
+/**
  * @title SafeMath
  * @dev Math operations with safety checks that throw on error
  */
@@ -46,7 +117,7 @@ library SafeMath {
   }
 }
 
-contract StorageContract {
+contract StorageContract is Ownable {
 
     using SafeMath for uint256;
 
@@ -63,7 +134,9 @@ contract StorageContract {
 
     Product[] products;
 
-    function addProduct(uint _productId, uint _price) public {
+    event ProductAdded(uint id, uint price, address retailer);
+    
+    function addProduct(uint _productId, uint _price, address _retailer) public onlyOwner {
       require(_productId > 0);
       require(_price > 0);
       
@@ -72,23 +145,24 @@ contract StorageContract {
       
       _product.id = _productId;
       _product.price = _price;
-      _product.retailer = msg.sender;
+      _product.retailer = _retailer;
 
       products.push(_product);
-    
+      
+      emit ProductAdded(_productId, _price, _retailer);
     }
 
-    function addProducts(uint[] calldata _productIds, uint[] calldata _prices) external {
+    function addProducts(uint[] calldata _productIds, uint[] calldata _prices, address[] calldata _retailers) external onlyOwner {
       require(_productIds.length > 0);
       require(_prices.length > 0);
-      require(_productIds.length == _prices.length);
+      require(_productIds.length == _prices.length && _productIds.length == _retailers.length);
 
       for(uint i = 0; i < _productIds.length; i++) {
-        addProduct(_productIds[i], _prices[i]);
+        addProduct(_productIds[i], _prices[i], _retailers[i]);
       }
     }
 
-    function isProductExist(uint _productId, address _retailer) external returns(bool res) {
+    function isProductExist(uint _productId, address _retailer) external view returns(bool res) {
       for(uint i = 0; i < products.length; i++) {
          if(products[i].id == _productId && products[i].retailer == _retailer) {
            return true;
@@ -98,8 +172,12 @@ contract StorageContract {
       return false;
     }
 
-    function updateProduct(uint _productId, uint _unconfirmedRequests, address buyer, bool isConfirmed) external {
+    function updateProduct(uint _productId, uint _unconfirmedRequests, uint _requestedProducts, address buyer, bool isConfirmed) external onlyOwner {
+      require(products.length > 0);
+      requestedProducts = _requestedProducts;
+      
       uint index = findProductIndexById(_productId);
+      
       products[index].unconfirmedRequests = _unconfirmedRequests;
       if(buyer != address(0) && !isBuyerExist(index, buyer)) {
         products[index].buyers.push(buyer);
@@ -107,11 +185,12 @@ contract StorageContract {
       products[index].isConfirmed[buyer] = isConfirmed;
     }
 
-    function isBuyerExist(uint _index, address _buyer) public view returns(bool) {
-    
-      for(uint y = 0; y < products[_index].buyers.length; y++) {
-        if(products[_index].buyers[y] == _buyer) {
-          return true;
+    function isBuyerExist(uint _index, address _buyer) internal view returns(bool) {
+      if(products[_index].buyers.length > 0){
+        for(uint y = 0; y < products[_index].buyers.length; y++) {
+          if(products[_index].buyers[y] == _buyer) {
+            return true;
+          }
         }
       }
       
