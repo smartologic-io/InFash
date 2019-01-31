@@ -185,7 +185,7 @@ contract StorageContract is Ownable {
       products[index].isConfirmed[buyer] = isConfirmed;
     }
 
-    function isBuyerExist(uint _index, address _buyer) internal view returns(bool) {
+    function isBuyerExist(uint _index, address _buyer) public view returns(bool) {
       if(products[_index].buyers.length > 0){
         for(uint y = 0; y < products[_index].buyers.length; y++) {
           if(products[_index].buyers[y] == _buyer) {

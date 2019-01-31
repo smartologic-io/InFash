@@ -1,50 +1,8 @@
 pragma solidity 0.5.2;
 
-/**
- * @title SafeMath
- * @dev Math operations with safety checks that throw on error
- */
-library SafeMath {
 
-  /**
-  * @dev Multiplies two numbers, throws on overflow.
-  */
-  function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {
-    if (a == 0) {
-      return 0;
-    }
-    c = a * b;
-    assert(c / a == b);
-    return c;
-  }
+import "./StorageContract.sol";
 
-  /**
-  * @dev Integer division of two numbers, truncating the quotient.
-  */
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    // uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-    return a / b;
-  }
-
-  /**
-  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
-  */
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
-
-  /**
-  * @dev Adds two numbers, throws on overflow.
-  */
-  function add(uint256 a, uint256 b) internal pure returns (uint256 c) {
-    c = a + b;
-    assert(c >= a);
-    return c;
-  }
-}
 
 /**
  * @title ERC20 interface
@@ -81,9 +39,9 @@ interface IERC20 {
 
 interface Storage {
 
-  function addProduct(uint _productId, uint _price) external;
+  function addProduct(uint _productId, uint _price, address _retailer) external;
 
-  function addProducts(uint[] calldata _productIds, uint[] calldata _prices) external;
+  function addProducts(uint[] calldata _productIds, uint[] calldata _prices, address[] calldata _retailers) external;
 
   function getProductPrice(uint _productId) external view returns(uint);
 
@@ -119,21 +77,21 @@ contract PurchaseContract {
 
   IERC20 token;
 
-  Storage _storage;
+  StorageContract _storage;
   
   event Purchase(uint _id, uint _price, address _buyer, address _retailer, address _model);
   
-  constructor(address _tokenAddress, address __storage) public {
+  constructor(address _tokenAddress) public {
     token = IERC20(_tokenAddress);
-    _storage = Storage(__storage);
+    _storage = new StorageContract();
   }
 
-  function addProduct(uint _productId, uint _price) external {
-    _storage.addProduct(_productId, _price);
+  function addProduct(uint _productId, uint _price, address _retailer) external {
+    _storage.addProduct(_productId, _price, _retailer);
   }
 
-  function addProducts(uint[] calldata _productIds, uint[] calldata _prices) external {
-    _storage.addProducts(_productIds, _prices);
+  function addProducts(uint[] calldata _productIds, uint[] calldata _prices, address[] calldata _retailers) external {
+    _storage.addProducts(_productIds, _prices, _retailers);
   }
   
   function purchaseRequest(uint _productId) external {
