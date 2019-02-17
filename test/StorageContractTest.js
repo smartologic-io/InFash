@@ -77,6 +77,11 @@ contract('StorageContract', function () {
     });
 
     describe('isProductExist', function () {
+      it('Should fail due to product doesn\'t exist', async function () {
+        await this.contract.addProduct(1, 100, web3.eth.accounts[1]);
+        await this.contract.isProductExist(1, web3.eth.accounts[1]);
+      });
+
       it('Should pass', async function () {
         await this.contract.addProduct(1, 100, web3.eth.accounts[1]);
         await this.contract.isProductExist(1, web3.eth.accounts[1]);
@@ -129,6 +134,10 @@ contract('StorageContract', function () {
     });
 
     describe('getRequestedProducts', function () {
+      it('Should fail', async function () {
+        assert.notEqual(await this.contract.getRequestedProducts(), 1);
+      });
+
       it('Should pass', async function () {
         await this.contract.addProduct(1, 100, web3.eth.accounts[1]);
         await this.contract.updateProduct(1, 1, 1, web3.eth.accounts[2], false);
@@ -137,6 +146,10 @@ contract('StorageContract', function () {
     });
 
     describe('getRequestedProductsBy', function () {
+      it('Should fail', async function () {
+        assert.notEqual(await this.contract.getRequestedProductsBy(web3.eth.accounts[2]), 1);
+      });
+
       it('Should pass', async function () {
         await this.contract.addProduct(1, 100, web3.eth.accounts[1]);
         await this.contract.updateProduct(1, 1, 1, web3.eth.accounts[2], false);
